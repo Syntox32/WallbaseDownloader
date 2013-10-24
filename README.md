@@ -1,7 +1,7 @@
 WallbaseDownloader
 ==================
 
-WallbaseDownloader is a tool made for the purpose of downloading toplist wallpapers from http://wallbase.cc/.
+WallbaseDownloader is a tool made for the purpose of downloading toplist wallpapers & search results from http://wallbase.cc/.
 
 <h2>Usage</h2>
   1. Go to http://wallbase.cc/toplist
