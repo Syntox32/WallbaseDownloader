@@ -124,7 +124,6 @@ namespace WallbaseDownloader
             }
             else
             {
-                // Work on this
                 LockGUI(false);
                 Download();
             }
