@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Windows.Forms;
 
-/*
+/**
  * Thanks to http://www.lyquidity.com/blog/?p=136 for providing this code.
  * 
  * Wraps System.Windows.Forms.OpenFileDialog to make it 
