@@ -1,13 +1,14 @@
 ﻿<Window x:Class="WallbaseDownloader.Settings"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings" Height="195" Width="459" Icon="icon.ico" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+        Title="Settings" Height="220" Width="459" Icon="icon.ico" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
     <Grid>
-        <CheckBox x:Name="checkAsync" Content="Enable async download(Does not show progress if enabled)" HorizontalAlignment="Left" Margin="26,21,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="checkUseDate" Content="Name folder with date(Default: Wallbase)" HorizontalAlignment="Left" Margin="26,42,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="checkSort" Content="Sort by category(not to be confused with purity) " HorizontalAlignment="Left" Margin="26,63,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="checkCreateUrl" Content="Create a list of all the URL's downloaded" HorizontalAlignment="Left" Margin="26,94,0,0" VerticalAlignment="Top"/>
-        <CheckBox x:Name="checkCreateLog" Content="Create a log file, mostly debugging purposes" HorizontalAlignment="Left" Margin="26,115,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="checkUseDate" Content="Name folder by date(Default: Wallbase)" HorizontalAlignment="Left" Margin="28,26,0,0" VerticalAlignment="Top" Checked="checkUseDate_Checked"/>
+        <CheckBox x:Name="checkSort" Content="Sort by category " HorizontalAlignment="Left" Margin="28,47,0,0" VerticalAlignment="Top" Checked="checkSort_Checked"/>
+        <CheckBox x:Name="checkCreateUrl" Content="Write URl list" HorizontalAlignment="Left" Margin="28,78,0,0" VerticalAlignment="Top" Checked="checkCreateUrl_Checked"/>
+        <CheckBox x:Name="checkCreateLog" Content="Write log file" HorizontalAlignment="Left" Margin="28,99,0,0" VerticalAlignment="Top" Checked="checkCreateLog_Checked"/>
+        <Button Content="OK" HorizontalAlignment="Left" Margin="345,148,0,0" VerticalAlignment="Top" Width="86" Height="24" Panel.ZIndex="1" Click="Button_Click"/>
+        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="69" Margin="-16,135,-11,-12" Stroke="Black" VerticalAlignment="Top" Width="480"/>
 
     </Grid>
 </Window>
