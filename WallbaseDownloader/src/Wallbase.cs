@@ -3,20 +3,21 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace WallbaseDownloader
 {
     public class Wallbase : IDisposable
     {
-        private bool UseAsync { get; set; }
         private bool CreateList { get; set; }
         private bool CreateLog { get; set; }
         private bool Sort { get; set; }
 
-        private string Url { get; set; }
         private string FolderPath { get; set; }
+        private string Url { get; set; }
 
         public double ToDownload { get; set; }
+        public int Failed { get; set; }
 
         private double _downloaded;
         public double Downloaded 
@@ -47,9 +48,6 @@ namespace WallbaseDownloader
         public delegate void WallbaseDownloadHandler(object sender, WallbaseDownloadEventArgs args);
         public event WallbaseDownloadHandler OnWallbaseDownload;
 
-        public delegate void EventHandler(object sender, EventArgs e);
-        public event EventHandler OnDownloadCompleted;
-
         public Wallbase(string folderPath, string url)
         {
             FolderPath = folderPath;
@@ -58,16 +56,14 @@ namespace WallbaseDownloader
             Sort = true;
             CreateLog = true;
             CreateList = true;
-            UseAsync = false;
 
             wallpapers = new List<Wallpaper>();
-            log = new Log(FolderPath, url);
+
             client = new WebClient();
             client.Proxy = null;
         }
 
-        public Wallbase(string folderPath, string url, 
-            bool useAsync, bool createList, bool createLog, bool sort) 
+        public Wallbase(string folderPath, string url, bool createList, bool createLog, bool sort) 
         {
             FolderPath = folderPath;
             Url = url;
@@ -75,12 +71,8 @@ namespace WallbaseDownloader
             Sort = sort;
             CreateLog = createLog;
             CreateList = createList;
-            UseAsync = useAsync;
 
             wallpapers = new List<Wallpaper>();
-
-            if (createLog)
-                log = new Log(FolderPath, url);
 
             client = new WebClient();
             client.Proxy = null;
@@ -88,16 +80,12 @@ namespace WallbaseDownloader
 
         public void DownloadWallpapers()
         {
-            if (CreateLog)
-            {
-                log.Init();
-                System.Threading.Thread.Sleep(30); 
-            }
+            log = new Log(FolderPath, Url);
 
             var ids = GetIDList(Url);
             ToDownload = ids.Count;
 
-            if (Sort) 
+            if (Sort)
             {
                 foreach (var item in _categories)
                     Directory.CreateDirectory(Path.Combine(FolderPath, item.ToString()));
@@ -116,36 +104,50 @@ namespace WallbaseDownloader
                 ParseDownload(uri, path, currentId, currenctWallId);
             }
 
-            if (log != null)
-                log.WriteLine(new String('-', 60));
+            log.Add(new String('-', 60));
 
-            foreach (var wall in wallpapers)
+            using (var _client = new WebClient())
             {
-                if (wall.FileURL.Download(wall.FilePath, UseAsync))
+                _client.Proxy = null;
+
+                foreach (var wall in wallpapers)
                 {
-                    if (log != null)
-                        log.SuccessDownload(wall.ID, wall.WallID);
+                    Task t = Task.Factory.StartNew(async () => 
+                    {
+                       await _Download(wall);
+                    });
+                    t.Wait();
+
+                    log.AddSuccess(wall.ID, wall.WallID);
+                }
+
+                if (CreateList)
+                    foreach (var wall in wallpapers)
+                        using (var stream = new StreamWriter(Path.Combine(FolderPath, "url_list.txt"), true))
+                            stream.WriteLine(wall.FileURL);
+
+                if (CreateLog)
+                {
+                    if(Failed > 0)
+                        log.AddError(1, "null", Failed + " wallpapers failed to download.");
+                    File.WriteAllLines(log.LogName, log.Events.ToArray());
+                }
+            }
+        }
+
+        private async Task _Download(Wallpaper wall)
+        {
+            using (var client = new WebClient())
+            {
+                try {
+                    await client.DownloadFileTaskAsync(new Uri(wall.FileURL), wall.FilePath);
 
                     Downloaded++;
                 }
-                else
-                    if (log != null)
-                        log.Error(wall.ID, wall.WallID, "Possible 404");
+                catch (WebException) {
+                    Failed++;
+                }
             }
-
-            if (CreateList)
-                foreach (var wall in wallpapers)
-                    using(var stream = new StreamWriter(Path.Combine(FolderPath, "url_list.txt"), true))
-                        stream.WriteLine(wall.FileURL);
-
-            OnDownloadCompleted(this, EventArgs.Empty);
-        }
-
-        protected void OnDownloadCompletedChanged(EventArgs e)
-        {
-            EventHandler handler = OnDownloadCompleted;
-            if (handler != null)
-                handler(this, e);
         }
 
         protected void OnWallbaseDownloadChanged(WallbaseDownloadEventArgs e)
@@ -153,19 +155,6 @@ namespace WallbaseDownloader
             WallbaseDownloadHandler handler = OnWallbaseDownload;
             if (handler != null)
                 handler(this, e);
-        }
-
-        private bool download(string url, string path) 
-        {
-            try 
-            { 
-                client.DownloadFile(new Uri(url), path); 
-                return true; 
-            }
-            catch (WebException) 
-            { 
-                return false; 
-            }
         }
 
         private bool _FileExist(string url)
@@ -210,8 +199,7 @@ namespace WallbaseDownloader
                     {
                         if (result)
                         {
-                            if (log != null)
-                                log.ParsingSuccess(currentId, currenctWallId);
+                            log.AddParsingSuccess(currentId, currenctWallId);
 
                             wall.FileURL = newUrl;
                             wall.FilePath = newPath;
@@ -225,13 +213,11 @@ namespace WallbaseDownloader
                     } 
                     else 
                     {
-                        if (log != null)
-                            log.ParsingAttempt(currentId, currenctWallId, (Category)cat, (Format)format);
+                        log.AddParsingAttempt(currentId, currenctWallId, (Category)cat, (Format)format);
 
                         if (result)
                         {
-                            if (log != null)
-                                log.ParsingSuccess(currentId, currenctWallId);
+                            log.AddParsingSuccess(currentId, currenctWallId);
                             
                             wall.FileURL = newUrl;
                             wall.FilePath = newPath;
@@ -244,8 +230,7 @@ namespace WallbaseDownloader
                 }
             }
 
-            if (log != null)
-                log.Error(currentId, currenctWallId, "404");
+            log.AddError(currentId, currenctWallId, "Un-resolved error while parsing");
 
             return false;
         }
@@ -298,8 +283,6 @@ namespace WallbaseDownloader
             if (disposing)
             {
                 client.Dispose();
-                if (log != null)
-                    log.Dispose();
             }
 
             client = null;
