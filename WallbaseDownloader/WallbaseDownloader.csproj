@@ -76,7 +76,6 @@
     <Compile Include="src\Enums.cs" />
     <Compile Include="src\Extensions.cs" />
     <Compile Include="src\Log.cs" />
-    <Compile Include="src\Main.cs" />
     <Compile Include="MainWindow.xaml.cs">
       <DependentUpon>MainWindow.xaml</DependentUpon>
       <SubType>Code</SubType>
