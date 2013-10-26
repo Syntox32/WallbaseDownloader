@@ -1,66 +1,57 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using System.Windows.Forms;
 using System.ComponentModel;
-using System.Net;
+using System.Windows;
+using System.Windows.Forms;
 
 namespace WallbaseDownloader
 {
     public partial class ProgressWindow : Window
     {
+        BackgroundWorker bw = new BackgroundWorker();
+
         public ProgressWindow(Wallbase wall)
         {
             InitializeComponent();
 
-            using (var bw = new BackgroundWorker())
+            bw.RunWorkerCompleted += (sender, e) => 
             {
-                bw.DoWork += (sender, e) =>
+                bw.Dispose();
+            };
+
+            bw.DoWork += (sender, e) =>
+            {
+                try
                 {
-                    try
-                    {
-                        wall.OnDownloadCompleted += wall_OnDownloadCompleted;
-                        wall.OnWallbaseDownload += wall_OnWallbaseDownload;
-                        wall.DownloadWallpapers();
-                    }
-                    catch (Exception ex)
-                    {
-                       System.Windows.Forms.MessageBox.Show("There was an error trying to download: " + ex.Message, "Error",
-                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                    }
-                };
+                    wall.OnWallbaseDownload += wall_OnWallbaseDownload;
+                    wall.DownloadWallpapers();
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.Forms.MessageBox.Show("There was an error trying to download: " + ex.Message, "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            };
 
-                bw.RunWorkerAsync();
-            }
+            bw.RunWorkerAsync();
         }
-
-        void wall_OnDownloadCompleted(object sender, EventArgs e) { }
 
         void wall_OnWallbaseDownload(object sender, WallbaseDownloadEventArgs args)
         {
-            progressBar.Dispatcher.BeginInvoke(
-                System.Windows.Threading.DispatcherPriority.Normal,
-                  new Action(
-                    delegate()
+            progressBar.Dispatcher.BeginInvoke( System.Windows.Threading.DispatcherPriority.Normal, new Action( delegate()
                     {
                         progressBar.Value = (int)((args.Downloaded / args.ToDownload) * 100);
 
-                        statusLabel.Content = "Downloaded: {0} / {1} - {2}%".FormatString(args.Downloaded, args.ToDownload, (int)((args.Downloaded / args.ToDownload) * 100));
+                        statusLabel.Content = String.Format("Downloaded: {0} / {1} - {2}%", args.Downloaded, args.ToDownload, (int)((args.Downloaded / args.ToDownload) * 100));
 
                         if (((int)((args.Downloaded / args.ToDownload) * 100) == 100))
                             statusLabel.Content += " - Download successfull";
                     }));
+        }
+
+        private void Window_Closing(object sender, CancelEventArgs e)
+        {
+            if (bw.IsBusy)
+                bw.CancelAsync();
         }
     }
 }
