@@ -1,132 +1,276 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
 using System.Windows.Forms;
 
 namespace WallbaseDownloader
 {
     public partial class MainWindow : Window
     {
-        public MainWindow()
-        {
-            InitializeComponent();
-
-            checkRemember.Checked += (sender, e) => 
-            {
-                Properties.Settings.Default.toSave = true;
-                Properties.Settings.Default.savePath = txtPath.Text;
-                Properties.Settings.Default.Save();
-            };
-
-            checkRemember.Unchecked += (sender, e) => 
-            {
-                Properties.Settings.Default.toSave = false;
-                Properties.Settings.Default.savePath = "";
-                Properties.Settings.Default.Save();
-            };
-
-            txtPath.TextChanged += (sender, e) => 
-            {
-                _folderPath = txtPath.Text;
-            };
-
-            checkRemember.IsChecked = Properties.Settings.Default.toSave;
-            txtPath.Text = Properties.Settings.Default.savePath;
-        }
-
         private string _folderPath;
         public string FolderPath
         {
             get
             {
-                if (NameFolderWithDate)
+                if (Properties.Settings.Default.nameDate)
                     return Path.Combine(_folderPath, String.Format("Wallbase - {0}", DateTime.Now.ToString("dd-MM-yy")));
-                else
+                else if (!Properties.Settings.Default.nameDate)
                     return Path.Combine(_folderPath, "Wallbase");
+                else
+                    throw new ArgumentNullException("FolderPath cannot be null");
             }
             set { _folderPath = value; }
         }
 
-        public bool NameFolderWithDate 
+        public string SaveUrl
+        {
+            get { return Properties.Settings.Default.saveUrl; }
+            set 
+            {
+                Properties.Settings.Default.saveUrl = value;
+                Properties.Settings.Default.Save(); 
+            }
+        }
+
+        public bool ToSaveUrl
+        {
+            get { return Properties.Settings.Default.toSaveUrl; }
+            set
+            {
+                Properties.Settings.Default.toSaveUrl = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        public string SavePath
+        {
+            get { return Properties.Settings.Default.savePath; }
+            set
+            {
+                Properties.Settings.Default.savePath = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        public bool ToSave
+        {
+            get { return Properties.Settings.Default.toSave; }
+            set
+            {
+                Properties.Settings.Default.toSave = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        public bool NameFolderWithDate
         {
             get { return Properties.Settings.Default.nameDate; }
-            set { Properties.Settings.Default.nameDate = value; Properties.Settings.Default.Save(); }
+            set
+            {
+                Properties.Settings.Default.nameDate = value;
+                Properties.Settings.Default.Save();
+            }
         }
- 
-        public bool CreateList 
+
+        public bool CreateList
         {
             get { return Properties.Settings.Default.createList; }
-            set { Properties.Settings.Default.nameDate = value; Properties.Settings.Default.Save(); }
+            set
+            {
+                Properties.Settings.Default.createList = value;
+                Properties.Settings.Default.Save();
+            }
         }
 
-        public bool CreateLog 
+        public bool CreateLog
         {
             get { return Properties.Settings.Default.createLog; }
-            set { Properties.Settings.Default.createLog = value; Properties.Settings.Default.Save(); }
+            set
+            {
+                Properties.Settings.Default.createLog = value;
+                Properties.Settings.Default.Save();
+            }
         }
 
-        public bool UseAsync 
-        {
-            get { return Properties.Settings.Default.useAsync; }
-            set { Properties.Settings.Default.useAsync = value; Properties.Settings.Default.Save(); }
-        }
-
-        public bool Sort 
+        public bool Sort
         {
             get { return Properties.Settings.Default.sort; }
-            set { Properties.Settings.Default.sort = value; Properties.Settings.Default.Save(); }
+            set
+            {
+                Properties.Settings.Default.sort = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
+        public MainWindow()
+        {
+            InitializeComponent();
+        }
+
+        private void Window_Loaded(object sender, RoutedEventArgs e)
+        {
+            checkRemember.IsChecked = ToSave;
+            txtPath.Text = SavePath;
+
+            checkSaveUrl.IsChecked = ToSaveUrl;
+            txtUrl.Text = SaveUrl;
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if ((bool)checkRemember.IsChecked)
+            {
+                ToSave = true;
+                SavePath = txtPath.Text;
+            } else {
+                ToSave = false;
+                SavePath = String.Empty;
+            }
+
+            if ((bool)checkSaveUrl.IsChecked)
+            {
+                ToSaveUrl = true;
+                SaveUrl = txtUrl.Text;
+            } else {
+                ToSaveUrl = false;
+                SaveUrl = String.Empty;
+            }
         }
        
         private void btnDownload_Click(object sender, RoutedEventArgs e)
         {
-            if (!String.IsNullOrEmpty(_folderPath))
-            if (Directory.Exists(FolderPath))
+            Download();
+        }
+
+        private void btnShowFolder_Click(object sender, RoutedEventArgs e)
+        {
+            if (!String.IsNullOrWhiteSpace(_folderPath))
+                using (var pro = new Process())
+                {
+                    try
+                    {
+                        pro.StartInfo.FileName = FolderPath;
+                        pro.Start();
+                    }
+                    catch { }
+                }
+        }
+
+        private void btnShowLog_Click(object sender, RoutedEventArgs e)
+        {
+            if (!String.IsNullOrWhiteSpace(txtPath.Text))
+                using (var proc = new Process())
+                {
+                    try
+                    {
+                        proc.StartInfo.FileName = FolderPath;
+                        proc.Start();
+                    }
+                    catch { }
+                }
+        }
+
+        private void menuSettings_Click(object sender, RoutedEventArgs e)
+        {
+            var wnd = new Settings();
+            wnd.Closing += (s, args) =>
             {
-                DialogResult result = System.Windows.Forms.MessageBox.Show("The directory already exist, do you want to overwrite it?\n\n" +
-                    "By pressing 'No' the new wallpapers with be merged with the existing ones, but the 'url_list' and 'log' files will be overwritten.",
-                    "The directory already exist", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+                Properties.Settings.Default.sort = this.Sort = (bool)wnd.checkSort.IsChecked;
+                Properties.Settings.Default.nameDate = this.NameFolderWithDate = (bool)wnd.checkUseDate.IsChecked;
+                Properties.Settings.Default.createList = this.CreateList = (bool)wnd.checkCreateUrl.IsChecked;
+                Properties.Settings.Default.createLog = this.CreateLog = (bool)wnd.checkCreateLog.IsChecked;
+                Properties.Settings.Default.Save();
+            };
 
-                if (result == System.Windows.Forms.DialogResult.Yes)
-                {
-                    string[] files = Directory.GetFiles(FolderPath);
-                    foreach (var file in files)
-                        File.Delete(file);
+            wnd.ShowDialog();
+        }
 
-                    Directory.Delete(FolderPath, true);
-                    System.Threading.Thread.Sleep(30);
-                    Directory.CreateDirectory(FolderPath);
+        private void btnPath_Click(object sender, RoutedEventArgs e)
+        {
+            var folderSelect = new FolderSelectDialog();
+            folderSelect.Title = "Choose a download directory for your wallpapers";
 
-                    LockGUI(false);
-                    Download();
-                }
-                else if (result == System.Windows.Forms.DialogResult.No)
-                {
-                    LockGUI(false);
-                    Download();
-                }
-                else if (result == System.Windows.Forms.DialogResult.Abort)
-                {
-                    System.Windows.Forms.MessageBox.Show("Downloading aborted.", "Aborting",
-                        MessageBoxButtons.OK, MessageBoxIcon.Information);
-                }
+            if (folderSelect.ShowDialog())
+            {
+                txtPath.Text = folderSelect.FileName;
+                FolderPath = folderSelect.FileName;
             }
+        }
+
+        private void txtPath_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            FolderPath = txtPath.Text;
+        }
+
+        private void Download() 
+        {
+            if (!String.IsNullOrEmpty(txtPath.Text))
+            {
+                FolderPath = txtPath.Text;
+                if (!String.IsNullOrWhiteSpace(txtUrl.Text))
+                {
+                    if (txtUrl.Text.StartsWith("http://wallbase.cc/") || txtUrl.Text.Contains("board="))
+                    {
+                        if (Directory.Exists(FolderPath))
+                            if (!HandleExistingDir(FolderPath))
+                                return;
+
+                        if (!Directory.Exists(FolderPath))
+                            Directory.CreateDirectory(FolderPath);
+
+                        LockGUI(false);
+
+                        using (var wall = new Wallbase(FolderPath, txtUrl.Text, CreateList, CreateLog, Sort))
+                        {
+                            var wnd = new ProgressWindow(wall);
+
+                            wnd.Closed += (sender, e) => 
+                            { 
+                                LockGUI(true); 
+                            };
+
+                            wnd.ShowDialog();
+                        }
+                    }
+                    else
+                        System.Windows.Forms.MessageBox.Show("The given URL is invalid\nEither toplists or search results." +
+                            "\n\nIf you keep getting this error, please read the README.",
+                            "URL Invalid Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                else
+                    System.Windows.Forms.MessageBox.Show("Please specify a URL.", "Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+            }
+            else System.Windows.Forms.MessageBox.Show("Please specify a folder location.", "Error",
+                MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+        }
+
+        private bool HandleExistingDir(string path)
+        {
+            DialogResult result = System.Windows.Forms.MessageBox.Show("The directory already exist, do you want to overwrite it?\n\n" +
+                        "Press NO to merge with the existing wallpapers, both URL and LOG files will be overwritten.",
+                        "The directory already exist", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+
+            if (result == System.Windows.Forms.DialogResult.Yes)
+            {
+                string[] files = Directory.GetFiles(FolderPath);
+                foreach (var file in files)
+                    File.Delete(file);
+
+                Directory.Delete(FolderPath, true);
+                System.Threading.Thread.Sleep(30);
+                Directory.CreateDirectory(FolderPath);
+
+                return true;
+            }
+            else if (result == System.Windows.Forms.DialogResult.No)
+                return true;
             else
-            {
-                LockGUI(false);
-                Download();
-            }
+                return false;
+
         }
 
         public void LockGUI(bool b)
@@ -142,93 +286,6 @@ namespace WallbaseDownloader
             checkRemember.IsEnabled = b;
 
             menuSettings.IsEnabled = b;
-        }
-
-        private void Download() 
-        {
-            if (!txtUrl.Text.StartsWith("http://wallbase.cc/") || !txtUrl.Text.Contains("board="))
-            {
-                System.Windows.Forms.MessageBox.Show("The given URL is invalid\nEither toplists or search results." +
-                    "\n\nIf you keep getting this error, please read the README.",
-                    "URL Invalid Error",
-                    MessageBoxButtons.OK, MessageBoxIcon.Warning);
-                return;
-            }
-
-            if (!String.IsNullOrEmpty(txtPath.Text))
-            {
-                FolderPath = txtPath.Text;
-                if (!String.IsNullOrWhiteSpace(txtUrl.Text))
-                {
-                    using (var wall = new Wallbase(FolderPath, txtUrl.Text, 
-                        UseAsync, CreateList, CreateLog, Sort))
-                    {
-                        var wnd = new ProgressWindow(wall);
-                        wnd.Closed += (sender, e) => { LockGUI(true); };
-                        wnd.ShowDialog();
-                    }
-                }
-                else
-                    System.Windows.Forms.MessageBox.Show("Please specify a URL.", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-            }
-            else System.Windows.Forms.MessageBox.Show("Please specify a folder location.", "Error",
-                MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
-        }
-
-        private void btnShowFolder_Click(object sender, RoutedEventArgs e)
-        {
-            if (!String.IsNullOrWhiteSpace(_folderPath))
-                using (var pro = new Process())
-                {
-                    try
-                    {
-                        pro.StartInfo.FileName = FolderPath;
-                        pro.Start();
-                    }
-                    catch { } 
-                }
-        }
-
-        private void btnShowLog_Click(object sender, RoutedEventArgs e) 
-        {
-            if (!String.IsNullOrEmpty(txtPath.Text))
-                using (var proc = new Process())
-                {
-                    try
-                    {
-                        proc.StartInfo.FileName = FolderPath;
-                        proc.Start();
-                    }
-                    catch { } 
-                }
-        }
-
-        private void menuSettings_Click(object sender, RoutedEventArgs e)
-        {
-            var wnd = new Settings();
-            wnd.Closing += (s, args) => 
-            {
-                Properties.Settings.Default.sort = this.Sort = (bool)wnd.checkSort.IsChecked;
-                Properties.Settings.Default.nameDate = this.NameFolderWithDate = (bool)wnd.checkUseDate.IsChecked;
-                Properties.Settings.Default.useAsync = this.UseAsync = (bool)wnd.checkAsync.IsChecked;
-                Properties.Settings.Default.createList = this.CreateList = (bool)wnd.checkCreateUrl.IsChecked;
-                Properties.Settings.Default.createLog = this.CreateLog = (bool)wnd.checkCreateLog.IsChecked;
-            };
-
-            wnd.ShowDialog();
-        }
-
-        private void btnPath_Click(object sender, RoutedEventArgs e)
-        {
-            var folderSelect = new FolderSelectDialog();
-            folderSelect.Title = "Choose a download directory for your wallpapers";
-
-            if (folderSelect.ShowDialog(IntPtr.Zero))
-            {
-                txtPath.Text = folderSelect.FileName;
-                FolderPath = folderSelect.FileName;
-            }
         }
     }
 }
