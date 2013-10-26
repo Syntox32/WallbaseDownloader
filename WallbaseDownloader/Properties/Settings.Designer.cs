@@ -50,18 +50,6 @@ namespace WallbaseDownloader.Properties {
         [global::System.Configuration.UserScopedSettingAttribute()]
         [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
         [global::System.Configuration.DefaultSettingValueAttribute("False")]
-        public bool useAsync {
-            get {
-                return ((bool)(this["useAsync"]));
-            }
-            set {
-                this["useAsync"] = value;
-            }
-        }
-        
-        [global::System.Configuration.UserScopedSettingAttribute()]
-        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
-        [global::System.Configuration.DefaultSettingValueAttribute("False")]
         public bool nameDate {
             get {
                 return ((bool)(this["nameDate"]));
@@ -104,6 +92,30 @@ namespace WallbaseDownloader.Properties {
             }
             set {
                 this["createLog"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("")]
+        public string saveUrl {
+            get {
+                return ((string)(this["saveUrl"]));
+            }
+            set {
+                this["saveUrl"] = value;
+            }
+        }
+        
+        [global::System.Configuration.UserScopedSettingAttribute()]
+        [global::System.Diagnostics.DebuggerNonUserCodeAttribute()]
+        [global::System.Configuration.DefaultSettingValueAttribute("False")]
+        public bool toSaveUrl {
+            get {
+                return ((bool)(this["toSaveUrl"]));
+            }
+            set {
+                this["toSaveUrl"] = value;
             }
         }
     }
