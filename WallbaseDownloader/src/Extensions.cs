@@ -1,17 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
 using System.Text.RegularExpressions;
 
 namespace WallbaseDownloader
 {
     public static class Extensions
     {
-        public static string FormatString(this string str, params object[] objects) {
-            return String.Format(str, objects);
-        }
-
         public static string ChangeExtentsion(this string str, Format format)
         {
             if (String.IsNullOrEmpty(str))
@@ -77,28 +72,6 @@ namespace WallbaseDownloader
                     return (Regex.Replace(str, pattern, "high-resolution"));
             }
             return null;
-        }
-
-        public static bool Download(this string url, string path, bool useAsync)
-        {
-            using (var client = new WebClient())
-            {
-                try {
-                    // Dirty cheat since I'm lazy
-                    if (useAsync) {
-                        client.DownloadFileAsync(new Uri(url), path);
-                        return true;
-                    }
-                    else if (!useAsync) {
-                        client.DownloadFile(new Uri(url), path);
-                        return true;
-                    }
-                    return false;
-                }
-                catch (WebException)  {
-                    return false; 
-                }
-            }
         }
     }
 }
