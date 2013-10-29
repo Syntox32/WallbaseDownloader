@@ -27,7 +27,7 @@ namespace WallbaseDownloader
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.Forms.MessageBox.Show("There was an error trying to download: " + ex.Message, "Error",
+                    System.Windows.Forms.MessageBox.Show("There was an error trying to download: " + ex.Message + "\n\nPerhaps your login was wrong?", "Error",
                         MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
             };
