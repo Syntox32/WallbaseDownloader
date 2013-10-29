@@ -8,6 +8,7 @@ namespace WallbaseDownloader
         png
     }
 
+    [Flags]
     public enum Category : int
     {
         General = 2,
