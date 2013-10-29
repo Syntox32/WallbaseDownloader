@@ -3,21 +3,53 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text.RegularExpressions;
+using System.Collections.Specialized;
 using System.Threading.Tasks;
+using System.Security;
+using System.Threading;
 
 namespace WallbaseDownloader
 {
-    public class Wallbase : IDisposable
+    public class Wallbase
     {
         private bool CreateList { get; set; }
         private bool CreateLog { get; set; }
         private bool Sort { get; set; }
+        private bool Login { get; set; }
+        private bool UseCollections { get; set; }
 
         private string FolderPath { get; set; }
-        private string Url { get; set; }
+
+        private string _url;
+        private string Url 
+        {
+            get { return _url; }
+            set
+            {
+                if (_UriExist(value))
+                    _url = value;
+                else
+                    throw new ArgumentException
+                        ("The URI does not exist");
+
+                if (value.Contains("thpp="))
+                {
+                    if (value.GetThpp() > 60)
+                        Delay = 1000;
+                    else
+                        Delay = 0;
+                }
+                else
+                    Delay = 0;
+            }
+        }
+
+        private string Username { get; set; }
+        private SecureString Password { get; set; }
 
         public double ToDownload { get; set; }
         public int Failed { get; set; }
+        public int Delay { get; set; }
 
         private double _downloaded;
         public double Downloaded 
@@ -34,10 +66,7 @@ namespace WallbaseDownloader
             }
         }
 
-        private bool _disposed;
-
         private Log log;
-        private WebClient client;
 
         private int currentId;
         private string currenctWallId;
@@ -48,22 +77,8 @@ namespace WallbaseDownloader
         public delegate void WallbaseDownloadHandler(object sender, WallbaseDownloadEventArgs args);
         public event WallbaseDownloadHandler OnWallbaseDownload;
 
-        public Wallbase(string folderPath, string url)
-        {
-            FolderPath = folderPath;
-            Url = url;
-
-            Sort = true;
-            CreateLog = true;
-            CreateList = true;
-
-            wallpapers = new List<Wallpaper>();
-
-            client = new WebClient();
-            client.Proxy = null;
-        }
-
-        public Wallbase(string folderPath, string url, bool createList, bool createLog, bool sort) 
+        public Wallbase(string folderPath, string username, SecureString password, bool login, 
+            string url, bool createList, bool createLog, bool sort) 
         {
             FolderPath = folderPath;
             Url = url;
@@ -71,11 +86,17 @@ namespace WallbaseDownloader
             Sort = sort;
             CreateLog = createLog;
             CreateList = createList;
+            Login = login;
+
+            Username = username;
+            Password = password;
+
+            if (url.Contains("collection"))
+                UseCollections = true;
+            else
+                UseCollections = false;
 
             wallpapers = new List<Wallpaper>();
-
-            client = new WebClient();
-            client.Proxy = null;
         }
 
         public void DownloadWallpapers()
@@ -87,8 +108,9 @@ namespace WallbaseDownloader
 
             if (Sort)
             {
-                foreach (var item in _categories)
-                    Directory.CreateDirectory(Path.Combine(FolderPath, item.ToString()));
+                if (!UseCollections)
+                    foreach (var item in _categories)
+                        Directory.CreateDirectory(Path.Combine(FolderPath, item.ToString()));
             }
 
             foreach (var ID in ids)
@@ -106,32 +128,31 @@ namespace WallbaseDownloader
 
             log.Add(new String('-', 60));
 
-            using (var _client = new WebClient())
+            foreach (var wall in wallpapers)
             {
-                _client.Proxy = null;
+                Task t = Task.Factory.StartNew(async () => 
+                {
+                    await _Download(wall);
+                });
 
+                t.Wait();
+
+                Thread.Sleep(Delay);
+
+                log.AddSuccess(wall.ID, wall.WallID);
+            }
+
+            if (CreateList)
                 foreach (var wall in wallpapers)
-                {
-                    Task t = Task.Factory.StartNew(async () => 
-                    {
-                       await _Download(wall);
-                    });
-                    t.Wait();
+                    using (var stream = new StreamWriter(Path.Combine(FolderPath, "links.txt"), true))
+                        stream.WriteLine(wall.FileURL);
 
-                    log.AddSuccess(wall.ID, wall.WallID);
-                }
+            if (CreateLog)
+            {
+                if(Failed > 0)
+                    log.AddError(++currentId, "Attention", Failed + " wallpapers failed to download.");
 
-                if (CreateList)
-                    foreach (var wall in wallpapers)
-                        using (var stream = new StreamWriter(Path.Combine(FolderPath, "url_list.txt"), true))
-                            stream.WriteLine(wall.FileURL);
-
-                if (CreateLog)
-                {
-                    if(Failed > 0)
-                        log.AddError(1, "null", Failed + " wallpapers failed to download.");
-                    File.WriteAllLines(log.LogName, log.Events.ToArray());
-                }
+                File.WriteAllLines(log.LogName, log.Events.ToArray());
             }
         }
 
@@ -139,12 +160,14 @@ namespace WallbaseDownloader
         {
             using (var client = new WebClient())
             {
-                try {
-                    await client.DownloadFileTaskAsync(new Uri(wall.FileURL), wall.FilePath);
+                try 
+                {
+                    await client.DownloadFileTaskAsync(new Uri(wall.FileURL), wall.FilePath);                   
 
                     Downloaded++;
                 }
-                catch (WebException) {
+                catch (WebException) 
+                {
                     Failed++;
                 }
             }
@@ -157,7 +180,7 @@ namespace WallbaseDownloader
                 handler(this, e);
         }
 
-        private bool _FileExist(string url)
+        private bool _UriExist(string url)
         {
             try
             {
@@ -193,7 +216,7 @@ namespace WallbaseDownloader
                     else if (!Sort)
                         newPath = path;
 
-                    var result = _FileExist(newUrl);
+                    var result = _UriExist(newUrl);
 
                     if (!parsing)
                     {
@@ -239,12 +262,37 @@ namespace WallbaseDownloader
         {
             _categories = requestURL.GetBoards();
 
-            var regex = new Regex("data-id=\"[0-9]{0,7}\"");
+            var regex = new Regex("data-id=\"[0-9]{0,9}\"");
+            var csrfReg = new Regex("name=\"csrf\" value=\"(.+?)\"");
+            var refReg = new Regex("name=\"ref\" value=\"(.+?)\"");
+
             var source = string.Empty;
             var ids = new List<string>();
 
             var uri = new Uri(requestURL);
-            source = client.DownloadString(uri);
+
+            using(var client = new CookieClient())
+            {
+                if (Login)
+                {
+                    var html = client.DownloadString(@"http://wallbase.cc/user/login");
+
+                    var csrfMatch = csrfReg.Match(html);
+                    var refMatch = refReg.Match(html);
+
+                    var credentials = new NameValueCollection 
+                    { 
+                        { "csrf", csrfMatch.Groups[1].ToString() },
+                        { "ref", refMatch.Groups[1].ToString() },
+                        { "username", Username },
+                        { "password", Password.SecureToString() },
+                    };
+
+                    client.UploadValues(@"http://wallbase.cc/user/do_login", "post", credentials);
+                }
+
+                source = client.DownloadString(uri);
+            }
 
             string[] temp = source.Split(
                 new string[] { "class=\"wrapper\"" }, StringSplitOptions.None);
@@ -258,38 +306,29 @@ namespace WallbaseDownloader
 
                     if (!ids.Contains(id))
                         ids.Add(id);
+
                     match = match.NextMatch();
                 }
             }
             return ids;
         }
+    }
 
-        public void Dispose() 
+    // VS wants to open this in designer mode for whatever reason
+    [System.ComponentModel.DesignerCategory("Code")]
+    public class CookieClient : WebClient
+    {
+        private CookieContainer _cookie = new CookieContainer();
+
+        protected override WebRequest GetWebRequest(Uri address)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
+            HttpWebRequest req = (HttpWebRequest)base.GetWebRequest(address);
+            req.ProtocolVersion = HttpVersion.Version10;
 
-        ~Wallbase() 
-        {
-            Dispose(false);
-        }
+            if (req is HttpWebRequest)
+                (req as HttpWebRequest).CookieContainer = _cookie;
 
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_disposed)
-                return;
-
-            if (disposing)
-            {
-                client.Dispose();
-            }
-
-            client = null;
-            if (log != null)
-                log = null;
-
-            _disposed = true;
+            return req;
         }
     }
 
