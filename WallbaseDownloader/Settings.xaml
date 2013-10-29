@@ -1,14 +1,19 @@
 ﻿<Window x:Class="WallbaseDownloader.Settings"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Settings" Height="220" Width="459" Icon="icon.ico" WindowStartupLocation="CenterScreen" ResizeMode="NoResize">
+        Title="Settings" Height="293" Width="459" Icon="icon.ico" WindowStartupLocation="CenterScreen" ResizeMode="NoResize" Closing="Window_Closing">
     <Grid>
-        <CheckBox x:Name="checkUseDate" Content="Name folder by date(Default: Wallbase)" HorizontalAlignment="Left" Margin="28,26,0,0" VerticalAlignment="Top" Checked="checkUseDate_Checked"/>
-        <CheckBox x:Name="checkSort" Content="Sort by category " HorizontalAlignment="Left" Margin="28,47,0,0" VerticalAlignment="Top" Checked="checkSort_Checked"/>
-        <CheckBox x:Name="checkCreateUrl" Content="Write URl list" HorizontalAlignment="Left" Margin="28,78,0,0" VerticalAlignment="Top" Checked="checkCreateUrl_Checked"/>
-        <CheckBox x:Name="checkCreateLog" Content="Write log file" HorizontalAlignment="Left" Margin="28,99,0,0" VerticalAlignment="Top" Checked="checkCreateLog_Checked"/>
-        <Button Content="OK" HorizontalAlignment="Left" Margin="345,148,0,0" VerticalAlignment="Top" Width="86" Height="24" Panel.ZIndex="1" Click="Button_Click"/>
-        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="69" Margin="-16,135,-11,-12" Stroke="Black" VerticalAlignment="Top" Width="480"/>
+        <CheckBox x:Name="checkUseDate" Content="Name folder by date(Default: Wallbase)" HorizontalAlignment="Left" Margin="28,20,0,0" VerticalAlignment="Top" Checked="checkUseDate_Checked"/>
+        <CheckBox x:Name="checkSort" Content="Sort by category " HorizontalAlignment="Left" Margin="28,41,0,0" VerticalAlignment="Top" Checked="checkSort_Checked"/>
+        <CheckBox x:Name="checkCreateUrl" Content="Write URl list" HorizontalAlignment="Left" Margin="28,72,0,0" VerticalAlignment="Top" Checked="checkCreateUrl_Checked"/>
+        <CheckBox x:Name="checkCreateLog" Content="Write log file" HorizontalAlignment="Left" Margin="28,93,0,0" VerticalAlignment="Top" Checked="checkCreateLog_Checked"/>
+        <Button Content="OK" HorizontalAlignment="Left" Margin="347,223,0,0" VerticalAlignment="Top" Width="86" Height="24" Panel.ZIndex="1" Click="Button_Click"/>
+        <Rectangle Fill="#FFF4F4F5" HorizontalAlignment="Left" Height="52" Margin="-14,213,-11,0" Stroke="Black" VerticalAlignment="Top" Width="478"/>
+        <Label Content="Username:" HorizontalAlignment="Left" Margin="35,148,0,0" VerticalAlignment="Top"/>
+        <CheckBox x:Name="checkUseCredentials" Content="Enable user permissions(resets after restart)" HorizontalAlignment="Left" Margin="28,127,0,0" VerticalAlignment="Top" Checked="checkUseCredentials_Checked" Unchecked="checkUseCredentials_Unchecked"/>
+        <Label Content="Password:" HorizontalAlignment="Left" Margin="35,176,0,0" VerticalAlignment="Top"/>
+        <TextBox x:Name="txtUser" HorizontalAlignment="Left" Height="23" Margin="106,151,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Width="157" IsEnabled="False"/>
+        <PasswordBox x:Name="txtPass" HorizontalAlignment="Left" Margin="106,180,0,0" VerticalAlignment="Top" Width="157" IsEnabled="False"/>
 
     </Grid>
 </Window>

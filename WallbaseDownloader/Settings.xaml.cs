@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Security;
+using System.Windows;
 
 namespace WallbaseDownloader
 {
@@ -15,6 +16,10 @@ namespace WallbaseDownloader
             checkCreateUrl.IsChecked = CreateList;
             checkUseDate.IsChecked = NameFolderWithDate;
             checkSort.IsChecked = Sort;
+            checkUseCredentials.IsChecked = UsePermissions;
+
+            txtUser.Text = Username;
+            txtPass.Password = Password.SecureToString();
         }
 
         public bool NameFolderWithDate
@@ -56,6 +61,28 @@ namespace WallbaseDownloader
                 Properties.Settings.Default.Save();
             }
         }
+        
+        public bool UsePermissions
+        {
+            get { return Properties.Settings.Default.usePermissions; }
+            set { Properties.Settings.Default.usePermissions = value; }
+        }
+
+        public SecureString Password
+        {
+            get { return Properties.Settings.Default.password; }
+            set { Properties.Settings.Default.password = value; }
+        }
+
+        public string Username
+        {
+            get { return Properties.Settings.Default.username; }
+            set
+            {
+                Properties.Settings.Default.username = value;
+                Properties.Settings.Default.Save();
+            }
+        }
 
         private void checkUseDate_Checked(object sender, RoutedEventArgs e)
         {
@@ -80,6 +107,31 @@ namespace WallbaseDownloader
         private void Button_Click(object sender, RoutedEventArgs e)
         {
             this.Close();
+        }
+
+        private void checkUseCredentials_Checked(object sender, RoutedEventArgs e)
+        {
+            UsePermissions = true;
+
+            txtPass.IsEnabled = true;
+            txtUser.IsEnabled = true;
+        }
+
+        private void checkUseCredentials_Unchecked(object sender, RoutedEventArgs e)
+        {
+            UsePermissions = false;
+
+            txtPass.IsEnabled = false;
+            txtUser.IsEnabled = false;
+        }
+
+        private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            if (UsePermissions)
+            {
+                Username = txtUser.Text;
+                Password = txtPass.SecurePassword;
+            }
         }
     }
 }
