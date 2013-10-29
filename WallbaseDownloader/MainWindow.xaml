@@ -11,7 +11,7 @@
             <ColumnDefinition/>
         </Grid.ColumnDefinitions>
         <Menu HorizontalAlignment="Left" Height="26" Style="{DynamicResource SimpleMenu}" VerticalAlignment="Top" Width="468" Background="#FF343838">
-            <MenuItem x:Name="menuSettings" Header="Settings" Height="26" Margin="0" Style="{DynamicResource SimpleMenuItem}" VerticalAlignment="Top" Foreground="#FFE9E9E9" Click="menuSettings_Click" Width="94"/>
+            <MenuItem x:Name="menuSettings" Header="Settings" Height="26" Margin="0" Style="{DynamicResource SimpleMenuItem}" VerticalAlignment="Top" Foreground="#FFE9E9E9" Click="menuSettings_Click" Width="88"/>
         </Menu>
         <Button x:Name="btnDownload" Content="Download" HorizontalAlignment="Left" Margin="21,162,0,0" Style="{DynamicResource SimpleButton}" VerticalAlignment="Top" Width="129" Height="29" Click="btnDownload_Click">
             <Button.BorderBrush>
@@ -38,6 +38,7 @@
         <Label Content="Wallbase URL:" HorizontalAlignment="Left" Margin="17,43,0,0" VerticalAlignment="Top"/>
         <Label Content="Folder path:" HorizontalAlignment="Left" Margin="17,100,0,0" VerticalAlignment="Top"/>
         <CheckBox x:Name="checkSaveUrl" Content="  Remember URL" HorizontalAlignment="Left" Margin="121,70,0,0" Style="{DynamicResource SimpleCheckBox}" VerticalAlignment="Top" Height="19" Width="132" BorderBrush="#FFA6A6A6" Background="#FFEAEAEA"/>
+        <MenuItem x:Name="menuHelp" Header="Help" Height="26" Margin="75,0,300,0" Style="{DynamicResource SimpleMenuItem}" VerticalAlignment="Top" Foreground="#FFE9E9E9" Click="menuHelp_Click"/>
 
     </Grid>
 </Window>
