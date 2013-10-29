@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.IO;
+using System.Security;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
@@ -104,6 +105,28 @@ namespace WallbaseDownloader
             }
         }
 
+        public bool UsePermissions
+        {
+            get { return Properties.Settings.Default.usePermissions; }
+            set { Properties.Settings.Default.usePermissions = value; }
+        }
+
+        public SecureString Password
+        {
+            get { return Properties.Settings.Default.password; }
+            set { Properties.Settings.Default.password = value; }
+        }
+
+        public string Username
+        {
+            get { return Properties.Settings.Default.username; }
+            set
+            {
+                Properties.Settings.Default.username = value;
+                Properties.Settings.Default.Save();
+            }
+        }
+
         public MainWindow()
         {
             InitializeComponent();
@@ -116,6 +139,8 @@ namespace WallbaseDownloader
 
             checkSaveUrl.IsChecked = ToSaveUrl;
             txtUrl.Text = SaveUrl;
+
+            UsePermissions = false;
         }
 
         private void Window_Closing(object sender, System.ComponentModel.CancelEventArgs e)
@@ -141,7 +166,7 @@ namespace WallbaseDownloader
        
         private void btnDownload_Click(object sender, RoutedEventArgs e)
         {
-            Download();
+            PrepareDownload();
         }
 
         private void btnShowFolder_Click(object sender, RoutedEventArgs e)
@@ -187,6 +212,12 @@ namespace WallbaseDownloader
             wnd.ShowDialog();
         }
 
+        private void menuHelp_Click(object sender, RoutedEventArgs e)
+        {
+            var hlp = new Help();
+            hlp.ShowDialog();
+        }
+
         private void btnPath_Click(object sender, RoutedEventArgs e)
         {
             var folderSelect = new FolderSelectDialog();
@@ -204,55 +235,72 @@ namespace WallbaseDownloader
             FolderPath = txtPath.Text;
         }
 
-        private void Download() 
+        private void PrepareDownload()
         {
             if (!String.IsNullOrEmpty(txtPath.Text))
             {
                 FolderPath = txtPath.Text;
                 if (!String.IsNullOrWhiteSpace(txtUrl.Text))
                 {
-                    if (txtUrl.Text.StartsWith("http://wallbase.cc/") || txtUrl.Text.Contains("board="))
+                    if (txtUrl.Text.StartsWith("http://wallbase.cc/") && txtUrl.Text.Contains("board="))
                     {
-                        if (Directory.Exists(FolderPath))
-                            if (!HandleExistingDir(FolderPath))
-                                return;
-
-                        if (!Directory.Exists(FolderPath))
-                            Directory.CreateDirectory(FolderPath);
-
-                        LockGUI(false);
-
-                        using (var wall = new Wallbase(FolderPath, txtUrl.Text, CreateList, CreateLog, Sort))
+                        if ((int)txtUrl.Text.GetThpp() > 500)
                         {
-                            var wnd = new ProgressWindow(wall);
-
-                            wnd.Closed += (sender, e) => 
-                            { 
-                                LockGUI(true); 
-                            };
-
-                            wnd.ShowDialog();
-                        }
-                    }
-                    else
-                        System.Windows.Forms.MessageBox.Show("The given URL is invalid\nEither toplists or search results." +
-                            "\n\nIf you keep getting this error, please read the README.",
-                            "URL Invalid Error",
+                            System.Windows.Forms.MessageBox.Show("You went over the allowed downloading limit. Download aborting", "Error",
                             MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                        }
+
+                        Download();
+                    }
+                    else if (txtUrl.Text.StartsWith("http://wallbase.cc/") && (txtUrl.Text.Contains("collection")))
+                    {
+                        if (!UsePermissions)
+                        {
+                            System.Windows.Forms.MessageBox.Show("To download collections you need to enable user permissions in the settings menu.", "Error",
+                            MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                                return;
+                        }
+
+                        Download();
+                    }
+                    else System.Windows.Forms.MessageBox.Show("The given URL is not valid.\n" +
+                        "\n\nIf you keep getting this error, please read the README.",
+                        "URL Invalid Error",
+                        MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 }
-                else
-                    System.Windows.Forms.MessageBox.Show("Please specify a URL.", "Error",
-                        MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
+                else System.Windows.Forms.MessageBox.Show("Please specify a URL.", "Error",
+                    MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
             }
             else System.Windows.Forms.MessageBox.Show("Please specify a folder location.", "Error",
                 MessageBoxButtons.OK, MessageBoxIcon.Asterisk);
         }
 
+        private void Download()
+        {
+            if (Directory.Exists(FolderPath))
+                if (!HandleExistingDir(FolderPath))
+                    return;
+
+            if (!Directory.Exists(FolderPath))
+                Directory.CreateDirectory(FolderPath);
+
+            LockGUI(false);
+
+            var wall = new Wallbase(FolderPath, Username, Password, UsePermissions,
+                 txtUrl.Text, CreateList, CreateLog, Sort);
+            {
+                var wnd = new ProgressWindow(wall);
+                wnd.Closed += (sender, e) => { LockGUI(true); };
+                wnd.ShowDialog();
+            }
+        }
+
         private bool HandleExistingDir(string path)
         {
-            DialogResult result = System.Windows.Forms.MessageBox.Show("The directory already exist, do you want to overwrite it?\n\n" +
-                        "Press NO to merge with the existing wallpapers, both URL and LOG files will be overwritten.",
-                        "The directory already exist", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
+            var result = System.Windows.Forms.MessageBox.Show("The directory already exist, do you want to overwrite it?\n\n" +
+                "Press NO to merge with the existing wallpapers, both URL and LOG files will be overwritten.", 
+                "The directory already exist", MessageBoxButtons.YesNoCancel, MessageBoxIcon.Question);
 
             if (result == System.Windows.Forms.DialogResult.Yes)
             {
@@ -270,7 +318,6 @@ namespace WallbaseDownloader
                 return true;
             else
                 return false;
-
         }
 
         public void LockGUI(bool b)
