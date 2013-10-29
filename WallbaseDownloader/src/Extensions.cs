@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Runtime.InteropServices;
+using System.Security;
 using System.Text.RegularExpressions;
 
 namespace WallbaseDownloader
@@ -9,9 +11,6 @@ namespace WallbaseDownloader
     {
         public static string ChangeExtentsion(this string str, Format format)
         {
-            if (String.IsNullOrEmpty(str))
-                throw new ArgumentNullException();
-
             if (format == Format.jpg)
                 return Path.ChangeExtension(str, ".jpg");
             else if (format == Format.png)
@@ -22,24 +21,26 @@ namespace WallbaseDownloader
 
         public static string CreateURL(this string str) 
         {
-            if (String.IsNullOrEmpty(str))
-                throw new ArgumentNullException();
-
             string downloadTemplate = "http://wallpapers.wallbase.cc/{0}/wallpaper-{1}.{2}";
             return String.Format(downloadTemplate, "rozne", str, Format.jpg);
         }
 
         public static string CreateFileName(this string id, string path)
         {
-            if (String.IsNullOrEmpty(id))
-                throw new ArgumentNullException();
-
-            return Path.Combine(path, id + ".jpg");
+            return Path.Combine(path, "wallpaper-" + id + ".jpg");
         }
 
         public static List<Category> GetBoards(this string url) 
         {
             var temp = new List<Category>();
+
+            if (url.Contains("collection"))
+            {
+                temp.Add(Category.General);
+                temp.Add(Category.Manga);
+                temp.Add(Category.HighRes);
+                return temp;
+            }
 
             var board = new Regex("(board=[0-9]{0,3})");
             var boardMatch = board.Match(url);
@@ -57,9 +58,6 @@ namespace WallbaseDownloader
 
         public static string ChangeCategory(this string str, Category category)
         {
-            if (String.IsNullOrEmpty(str))
-                throw new ArgumentNullException();
-
             var pattern = @"(high-resolution|rozne|manga)";
 
             switch ((int)category) 
@@ -72,6 +70,31 @@ namespace WallbaseDownloader
                     return (Regex.Replace(str, pattern, "high-resolution"));
             }
             return null;
+        }
+
+        public static string SecureToString(this SecureString securePassword)
+        {
+            if (securePassword == null)
+                return "";
+
+            var str = IntPtr.Zero;
+            try 
+            {
+                str = Marshal.SecureStringToGlobalAllocUnicode(securePassword);
+                return Marshal.PtrToStringUni(str);
+            } 
+            finally 
+            {
+                Marshal.ZeroFreeGlobalAllocUnicode(str);
+            }
+        }
+
+        public static int GetThpp(this string str)
+        {
+            var numReg = new Regex("thpp=([0-9]{0,9})");
+            var numMatch = numReg.Match(str);
+
+            return Convert.ToInt32(numMatch.Groups[1].ToString());
         }
     }
 }
