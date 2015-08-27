@@ -1,6 +1,9 @@
 WallbaseDownloader
 ==================
 
+### Beware this no longer works as wallbase.cc ceased to exist
+__If you still want awesome wallpapers go to my new project [Haven](https://github.com/Syntox32/Haven)__
+
 WallbaseDownloader is a tool made for the purpose of downloading toplist wallpapers & search results from http://wallbase.cc/.
 
 <strong>NSFW & Collections</strong>: You have you enable user permissions in the settings menu in order to download NSFW rated wallpapers & Collections.
